@@ -6,41 +6,43 @@
 
 <title>Gate Run 3D</title>
 
-<link rel="stylesheet" href="style.css">
+<style>
+body { margin: 0; overflow: hidden; font-family: Arial; background:black; }
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  z-index: 10;
+}
+button { padding: 8px; margin-top: 5px; }
+
+/* JUMPSCARE */
+#jumpscare {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: red;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 50px;
+  color: black;
+  z-index: 999;
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
 </head>
 
 <body>
 
-<!-- INTRO UI -->
-<div id="intro">
-  <h1>🚪 GATE RUN</h1>
-  <button onclick="startElevator()">CREATE ELEVATOR</button>
-</div>
-
-<!-- ELEVATOR -->
-<div id="elevator">
-  <h2>🛗 Elevator Running...</h2>
-  <div id="bar"></div>
-</div>
-
-<!-- LOADING -->
-<div id="loading">
-  <h2>LOADING...</h2>
-  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-</div>
-
-<!-- GAME UI -->
 <div id="ui">
-  <h2>Gate: <span id="gate">1</span></h2>
-  <h3>HP: <span id="hp">100</span></h3>
+  <h2>🚪 Gate: <span id="gate">1</span>/50</h2>
+  <h3>❤️ HP: <span id="hp">100</span></h3>
 </div>
 
-<!-- JOYSTICK -->
-<div id="joystick">
-  <div id="stick"></div>
-</div>
+<div id="jumpscare">YOU DIED</div>
 
 <script src="game.js"></script>
 
