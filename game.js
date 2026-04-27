@@ -1,92 +1,107 @@
 /* =========================
-   AUDIO SYSTEM
+   FORCE START (NO BUG)
 ========================= */
-let audioCtx = null;
+window.onload = function(){
+
+  const elevator = document.getElementById("elevator");
+  const loading = document.getElementById("loading");
+
+  setTimeout(()=>{
+    if(elevator) elevator.style.display = "none";
+    if(loading) loading.style.display = "flex";
+
+    setTimeout(()=>{
+      if(loading) loading.style.display = "none";
+    },1500);
+
+  },2000);
+};
+
+/* crash protection */
+window.onerror = function(){
+  let elevator = document.getElementById("elevator");
+  let loading = document.getElementById("loading");
+
+  if(elevator) elevator.style.display="none";
+  if(loading) loading.style.display="none";
+};
+
+/* =========================
+   AUDIO
+========================= */
+let audioCtx=null;
 
 function initAudio(){
   if(audioCtx) return;
 
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 
-  // ambient wind
-  playAmbient();
+  // ambient
+  let osc=audioCtx.createOscillator();
+  let gain=audioCtx.createGain();
 
-  document.removeEventListener("click", initAudio);
-  document.removeEventListener("touchstart", initAudio);
-}
-
-document.addEventListener("click", initAudio);
-document.addEventListener("touchstart", initAudio);
-
-/* AMBIENT SOUND */
-function playAmbient(){
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
-
-  osc.type = "sine";
-  osc.frequency.value = 60;
-
-  gain.gain.value = 0.02;
+  osc.frequency.value=60;
+  gain.gain.value=0.02;
 
   osc.connect(gain);
   gain.connect(audioCtx.destination);
-
   osc.start();
+
+  document.removeEventListener("click",initAudio);
+  document.removeEventListener("touchstart",initAudio);
 }
 
-/* HEARTBEAT */
+document.addEventListener("click",initAudio);
+document.addEventListener("touchstart",initAudio);
+
 function heartbeat(){
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
+  if(!audioCtx) return;
 
-  osc.frequency.value = 100;
-  gain.gain.value = 0.1;
+  let o=audioCtx.createOscillator();
+  let g=audioCtx.createGain();
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  o.frequency.value=100;
+  g.gain.value=0.1;
 
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.1);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+0.1);
 }
 
-/* JUMPSCARE SOUND */
 function jumpscareSound(){
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
+  if(!audioCtx) return;
 
-  osc.type = "square";
-  osc.frequency.value = 300;
+  let o=audioCtx.createOscillator();
+  let g=audioCtx.createGain();
 
-  gain.gain.value = 0.3;
+  o.type="square";
+  o.frequency.value=300;
+  g.gain.value=0.3;
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.3);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+0.3);
 }
 
 /* =========================
    SCENE
 ========================= */
-let scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0a0a0a, 10, 80);
+let scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x0a0a0a,10,80);
 
-let camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
 
-let renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
+let renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* LIGHT */
-let ambient = new THREE.AmbientLight(0x404040, 1.2);
+let ambient=new THREE.AmbientLight(0x404040,1.2);
 scene.add(ambient);
 
-let light = new THREE.PointLight(0xffffff, 1.5, 25);
+let light=new THREE.PointLight(0xffffff,1.5,25);
 scene.add(light);
 
 /* PLAYER */
-let player = new THREE.Object3D();
+let player=new THREE.Object3D();
 scene.add(player);
 
 camera.position.set(0,1.6,0);
@@ -94,15 +109,15 @@ player.add(camera);
 
 let yaw=0;
 
-/* LOOK */
-document.addEventListener("mousemove", e=>{
-  yaw -= e.movementX * 0.002;
-  player.rotation.y = yaw;
+document.addEventListener("mousemove",e=>{
+  yaw -= e.movementX*0.002;
+  player.rotation.y=yaw;
 });
 
 let lastX=null;
-document.addEventListener("touchmove", e=>{
+document.addEventListener("touchmove",e=>{
   if(e.touches.length!==1) return;
+
   let x=e.touches[0].clientX;
   if(lastX!==null){
     yaw -= (x-lastX)*0.005;
@@ -112,11 +127,11 @@ document.addEventListener("touchmove", e=>{
 });
 
 /* FLOOR */
-let floor = new THREE.Mesh(
+let floor=new THREE.Mesh(
   new THREE.PlaneGeometry(500,500),
   new THREE.MeshStandardMaterial({color:0x1f6b2e})
 );
-floor.rotation.x = -Math.PI/2;
+floor.rotation.x=-Math.PI/2;
 scene.add(floor);
 
 /* JOYSTICK */
@@ -160,6 +175,7 @@ base.addEventListener("touchmove",(e)=>{
 let chunks=[];
 
 function createChunk(z){
+
   let g=new THREE.Group();
 
   let seg=new THREE.Mesh(
@@ -204,10 +220,10 @@ function createChunk(z){
 
 for(let i=0;i<6;i++){
   createChunk(-i*20);
-}
+});
 
 /* ENEMY */
-let enemy = new THREE.Mesh(
+let enemy=new THREE.Mesh(
   new THREE.BoxGeometry(1,2,1),
   new THREE.MeshStandardMaterial({color:0xff0000})
 );
@@ -227,8 +243,8 @@ function update(){
   let fwd=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
   let right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
 
-  player.position.addScaledVector(fwd, -joy.y * speed);
-  player.position.addScaledVector(right, joy.x * speed);
+  player.position.addScaledVector(fwd,-joy.y*speed);
+  player.position.addScaledVector(right,joy.x*speed);
 
   camera.position.copy(player.position);
   light.position.copy(camera.position);
@@ -251,20 +267,17 @@ function update(){
     }
   });
 
-  /* ENEMY AI */
-  let dir = player.position.clone().sub(enemy.position).normalize();
+  let dir=player.position.clone().sub(enemy.position).normalize();
   enemy.position.add(dir.multiplyScalar(0.04));
 
-  /* HEARTBEAT */
-  if(hp < 50){
+  if(hp<50){
     heartbeatTimer++;
-    if(heartbeatTimer > 60){
+    if(heartbeatTimer>60){
       heartbeat();
-      heartbeatTimer = 0;
+      heartbeatTimer=0;
     }
   }
 
-  /* JUMPSCARE */
   if(player.position.distanceTo(enemy.position)<2){
     jumpscareSound();
     document.body.style.background="red";
