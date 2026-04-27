@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
 <title>Gate Horror</title>
 
 <style>
@@ -18,8 +18,27 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
   z-index:10;
 }
 
-/* SCREENS */
-#elevator, #loading {
+/* EAT BUTTON */
+#eatBtn{
+  position:absolute;
+  bottom:180px;
+  right:40px;
+  width:110px;
+  height:60px;
+  background:rgba(0,255,100,0.15);
+  border:2px solid #00ff88;
+  color:white;
+  font-size:18px;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  border-radius:10px;
+  z-index:999;
+  user-select:none;
+}
+
+/* ELEVATOR */
+#elevator, #loading{
   position:absolute;
   width:100%;
   height:100%;
@@ -59,17 +78,19 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 
 <body>
 
-<div id="elevator"><h1>🛗 Loading assets...</h1></div>
+<div id="elevator"><h1>🛗 Elevator Descending...</h1></div>
 <div id="loading" style="display:none;"><h2>LOADING...</h2></div>
 
 <div id="ui">
   <h3>🚪 Gate: <span id="gate">1</span></h3>
   <h3>❤️ HP: <span id="hp">100</span></h3>
+  <h3>🍗 Food: <span id="food">100</span></h3>
 </div>
+
+<div id="eatBtn">EAT</div>
 
 <div id="joyBase"><div id="joyStick"></div></div>
 
-<!-- IMPORTANT: script at bottom -->
 <script src="game.js"></script>
 </body>
 </html>
