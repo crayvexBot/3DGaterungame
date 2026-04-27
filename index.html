@@ -19,7 +19,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 }
 
 /* ELEVATOR */
-#elevator {
+#elevator, #loading {
   position:absolute;
   width:100%;
   height:100%;
@@ -29,18 +29,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
   justify-content:center;
   align-items:center;
   flex-direction:column;
-}
-
-/* LOADING */
-#loading {
-  position:absolute;
-  width:100%;
-  height:100%;
-  background:black;
-  color:white;
-  display:none;
-  justify-content:center;
-  align-items:center;
+  z-index:20;
 }
 
 /* JOYSTICK */
@@ -71,11 +60,10 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 <body>
 
 <div id="elevator">
-  <h1>🛗 ELEVATOR INITIATING...</h1>
-  <p>Entering Gate System</p>
+  <h1>🛗 Elevator Descending...</h1>
 </div>
 
-<div id="loading">
+<div id="loading" style="display:none;">
   <h2>LOADING...</h2>
 </div>
 
