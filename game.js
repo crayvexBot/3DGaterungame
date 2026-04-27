@@ -1,50 +1,240 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+/* ======================
+   BASIC SETUP
+====================== */
+let scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x000000, 5, 40);
 
-<title>Gate Run 3D</title>
+let camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
-<style>
-body { margin: 0; overflow: hidden; font-family: Arial; background:black; }
-#ui {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  color: white;
-  z-index: 10;
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* LIGHT */
+let light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5,10,5);
+scene.add(light);
+
+/* FLOOR */
+let floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(200,200),
+  new THREE.MeshStandardMaterial({color:0x1f4d2a})
+);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
+
+/* PLAYER */
+let player = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshStandardMaterial({color:0xffffff})
+);
+scene.add(player);
+
+camera.position.set(0,2,5);
+
+/* ======================
+   VARIABLES
+====================== */
+let hp = 100;
+let gate = 1;
+
+let keys = {};
+
+/* ======================
+   INPUT
+====================== */
+document.addEventListener("keydown", e => keys[e.key]=true);
+document.addEventListener("keyup", e => keys[e.key]=false);
+
+/* ======================
+   GATES SYSTEM
+====================== */
+let gates = [];
+
+function generateGates(){
+
+  gates.forEach(g=>scene.remove(g));
+  gates = [];
+
+  for(let i=0;i<8;i++){
+
+    let g = new THREE.Mesh(
+      new THREE.BoxGeometry(5,5,1),
+      new THREE.MeshStandardMaterial({color:0x4444ff, wireframe:true})
+    );
+
+    g.position.set(
+      (Math.random()-0.5)*20,
+      2,
+      -i*15
+    );
+
+    scene.add(g);
+    gates.push(g);
+  }
 }
-button { padding: 8px; margin-top: 5px; }
 
-/* JUMPSCARE */
-#jumpscare {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: red;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  font-size: 50px;
-  color: black;
-  z-index: 999;
+generateGates();
+
+/* ======================
+   ENTITIES
+====================== */
+let lookAtMe = null;
+let seeingMan = null;
+
+/* LOOK AT ME */
+function spawnLookAtMe(){
+
+  lookAtMe = new THREE.Mesh(
+    new THREE.SphereGeometry(1),
+    new THREE.MeshStandardMaterial({
+      color:0xffffff,
+      transparent:true,
+      opacity:0.5
+    })
+  );
+
+  lookAtMe.position.set(
+    (Math.random()-0.5)*10,
+    2,
+    player.position.z - 10
+  );
+
+  scene.add(lookAtMe);
+
+  let timer = 10;
+
+  let t = setInterval(()=>{
+    timer--;
+
+    if(timer <= 0){
+      damage(50);
+      scene.remove(lookAtMe);
+      lookAtMe = null;
+      clearInterval(t);
+    }
+  },1000);
 }
-</style>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
-</head>
+/* SEEING MAN */
+function spawnSeeingMan(){
 
-<body>
+  seeingMan = new THREE.Mesh(
+    new THREE.BoxGeometry(1,2,1),
+    new THREE.MeshStandardMaterial({
+      color:0xffffff,
+      transparent:true,
+      opacity:0.3
+    })
+  );
 
-<div id="ui">
-  <h2>🚪 Gate: <span id="gate">1</span>/50</h2>
-  <h3>❤️ HP: <span id="hp">100</span></h3>
-</div>
+  seeingMan.position.set(
+    (Math.random()-0.5)*15,
+    1,
+    player.position.z - 8
+  );
 
-<div id="jumpscare">YOU DIED</div>
+  scene.add(seeingMan);
+}
 
-<script src="game.js"></script>
+/* ======================
+   DAMAGE + DEATH
+====================== */
+function damage(a){
+  hp -= a;
+  document.getElementById("hp").innerText = hp;
 
-</body>
-</html>
+  if(hp <= 0){
+    jumpscare();
+  }
+}
+
+function jumpscare(){
+  document.getElementById("jumpscare").style.display = "flex";
+  setTimeout(()=>location.reload(),2000);
+}
+
+/* ======================
+   GATE TRIGGER
+====================== */
+function checkGates(){
+
+  gates.forEach(g=>{
+
+    if(player.position.distanceTo(g.position) < 2){
+
+      gate++;
+      document.getElementById("gate").innerText = gate;
+
+      player.position.z -= 10;
+
+      generateGates();
+
+      triggerEvents();
+    }
+  });
+}
+
+/* ======================
+   EVENTS PER GATE
+====================== */
+function triggerEvents(){
+
+  // fog randomness
+  if(Math.random() < 0.4){
+    scene.fog.density = 0.05;
+  } else {
+    scene.fog.density = 0.01;
+  }
+
+  // Look At Me spawn
+  if(Math.random() < 0.5){
+    spawnLookAtMe();
+  }
+
+  // Seeing Man spawn
+  if(Math.random() < 0.3){
+    spawnSeeingMan();
+  }
+}
+
+/* ======================
+   MOVEMENT
+====================== */
+function update(){
+
+  let speed = 0.15;
+
+  if(keys["w"]) player.position.z -= speed;
+  if(keys["s"]) player.position.z += speed;
+  if(keys["a"]) player.position.x -= speed;
+  if(keys["d"]) player.position.x += speed;
+
+  camera.position.x = player.position.x;
+  camera.position.z = player.position.z + 5;
+  camera.position.y = 2;
+
+  camera.lookAt(player.position);
+
+  checkGates();
+
+  /* Seeing Man damage */
+  if(seeingMan){
+    if(camera.position.distanceTo(seeingMan.position) < 4){
+      if(Math.random() < 0.02){
+        damage(3);
+      }
+    }
+  }
+}
+
+/* ======================
+   LOOP
+====================== */
+function animate(){
+  requestAnimationFrame(animate);
+  update();
+  renderer.render(scene,camera);
+}
+
+animate();
