@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
-<title>Gate Run Horror</title>
+<title>Gate Horror</title>
 
 <style>
 body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 
+/* UI */
 #ui {
   position:absolute;
   top:10px;
@@ -17,6 +18,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
   z-index:10;
 }
 
+/* SCREENS */
 #elevator, #loading {
   position:absolute;
   width:100%;
@@ -30,6 +32,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
   z-index:20;
 }
 
+/* JOYSTICK */
 #joyBase {
   position:absolute;
   bottom:40px;
@@ -56,7 +59,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 
 <body>
 
-<div id="elevator"><h1>🛗 Elevator Descending...</h1></div>
+<div id="elevator"><h1>🛗 Loading assets...</h1></div>
 <div id="loading" style="display:none;"><h2>LOADING...</h2></div>
 
 <div id="ui">
@@ -66,6 +69,7 @@ body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 
 <div id="joyBase"><div id="joyStick"></div></div>
 
+<!-- IMPORTANT: script at bottom -->
 <script src="game.js"></script>
 </body>
 </html>
