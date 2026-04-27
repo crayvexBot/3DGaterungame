@@ -20,7 +20,7 @@ window.addEventListener("load", () => {
    SCENE
 ========================= */
 let scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 5, 50);
+scene.fog = new THREE.Fog(0x0a0a0a, 10, 80);
 
 let camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
@@ -28,8 +28,11 @@ let renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* LIGHT (FLASHLIGHT ONLY) */
-let light = new THREE.PointLight(0xffffff, 1, 20);
+/* LIGHTING (FIXED) */
+let ambient = new THREE.AmbientLight(0x404040, 1.2);
+scene.add(ambient);
+
+let light = new THREE.PointLight(0xffffff, 1.5, 25);
 scene.add(light);
 
 /* =========================
@@ -43,7 +46,6 @@ player.add(camera);
 
 let yaw=0;
 
-/* LOOK */
 document.addEventListener("mousemove", e=>{
   yaw -= e.movementX * 0.002;
   player.rotation.y = yaw;
@@ -66,7 +68,7 @@ document.addEventListener("touchmove", e=>{
 ========================= */
 let floor = new THREE.Mesh(
   new THREE.PlaneGeometry(500,500),
-  new THREE.MeshStandardMaterial({color:0x0d2d13})
+  new THREE.MeshStandardMaterial({color:0x1f6b2e})
 );
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
@@ -121,12 +123,12 @@ function createChunk(z){
 
   let floorSeg = new THREE.Mesh(
     new THREE.BoxGeometry(20,1,20),
-    new THREE.MeshStandardMaterial({color:0x123f1c})
+    new THREE.MeshStandardMaterial({color:0x1f6b2e})
   );
   floorSeg.position.set(0,0,z);
   g.add(floorSeg);
 
-  let wallMat=new THREE.MeshStandardMaterial({color:0x111111});
+  let wallMat=new THREE.MeshStandardMaterial({color:0x222222});
 
   let w1=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
   let w2=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
@@ -136,19 +138,17 @@ function createChunk(z){
 
   g.add(w1); g.add(w2);
 
-  /* FLOWERS */
   g.userData.flowers=[];
   for(let i=0;i<6;i++){
     let f=new THREE.Mesh(
       new THREE.SphereGeometry(0.3),
-      new THREE.MeshStandardMaterial({color:0x33ff88})
+      new THREE.MeshStandardMaterial({color:0x66ff99})
     );
     f.position.set((Math.random()-0.5)*15,0.3,z+(Math.random()-0.5)*15);
     g.add(f);
     g.userData.flowers.push(f);
   }
 
-  /* GATE */
   let gate=new THREE.Mesh(
     new THREE.BoxGeometry(4,4,1),
     new THREE.MeshStandardMaterial({color:0x00aaff,wireframe:true})
@@ -161,65 +161,30 @@ function createChunk(z){
   chunks.push(g);
 }
 
-/* INIT */
 for(let i=0;i<6;i++){
   createChunk(-i*20);
-}
+});
 
 /* =========================
-   ENTITIES
+   ENEMY
 ========================= */
-
-/* SEEING MAN */
-let seeingMan=null;
-
-function spawnSeeingMan(){
-  seeingMan=new THREE.Mesh(
-    new THREE.BoxGeometry(1,2,1),
-    new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.2})
-  );
-  seeingMan.position.set(0,1,-20);
-  scene.add(seeingMan);
-}
-
-/* LOOK AT ME */
-let lookAtMe=null;
-let lookTimer=0;
-
-function spawnLookAtMe(){
-  lookAtMe=new THREE.Mesh(
-    new THREE.SphereGeometry(1),
-    new THREE.MeshStandardMaterial({color:0xffffff})
-  );
-  lookAtMe.position.set(0,2,-15);
-  scene.add(lookAtMe);
-  lookTimer=10;
-}
-
-/* RUNNER */
-let runner=null;
-let runnerActive=false;
-
-function spawnRunner(){
-  runner=new THREE.Mesh(
-    new THREE.BoxGeometry(2,3,2),
-    new THREE.MeshStandardMaterial({color:0xff0000})
-  );
-  runner.position.set(0,1,-30);
-  scene.add(runner);
-  runnerActive=true;
-}
+let enemy = new THREE.Mesh(
+  new THREE.BoxGeometry(1,2,1),
+  new THREE.MeshStandardMaterial({color:0xff0000})
+);
+enemy.position.set(5,1,-20);
+scene.add(enemy);
 
 /* =========================
    RAIN
 ========================= */
 let rain=[];
-for(let i=0;i<300;i++){
+for(let i=0;i<200;i++){
   let d=new THREE.Mesh(
     new THREE.BoxGeometry(0.05,0.5,0.05),
     new THREE.MeshBasicMaterial({color:0xaaaaaa})
   );
-  d.position.set((Math.random()-0.5)*60,Math.random()*20,(Math.random()-0.5)*60);
+  d.position.set((Math.random()-0.5)*50,Math.random()*20,(Math.random()-0.5)*50);
   scene.add(d);
   rain.push(d);
 }
@@ -240,77 +205,39 @@ function update(){
   let fwd=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
   let right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
 
-  player.position.addScaledVector(fwd,joy.y*speed);
-  player.position.addScaledVector(right,joy.x*speed);
+  // FIXED CONTROLS
+  player.position.addScaledVector(fwd, -joy.y * speed);
+  player.position.addScaledVector(right, joy.x * speed);
 
   camera.position.copy(player.position);
-
-  /* FLASHLIGHT FOLLOW */
   light.position.copy(camera.position);
 
-  /* SPAWN CHUNKS */
   if(player.position.z < -(chunks.length-2)*20){
     createChunk(-chunks.length*20);
   }
 
-  /* FLOWER DAMAGE */
   chunks.forEach(c=>{
     c.userData.flowers.forEach(f=>{
       if(player.position.distanceTo(f.position)<1){
-        hp-=0.2;
+        hp -= 0.2;
       }
     });
-  });
 
-  /* SEEING MAN */
-  if(seeingMan){
-    let dist=camera.position.distanceTo(seeingMan.position);
-    if(dist<6){
-      hp-=0.05;
-    }
-  }
-
-  /* LOOK AT ME */
-  if(lookAtMe){
-    lookTimer -= 0.016;
-    if(lookTimer<=0){
-      hp-=50;
-      scene.remove(lookAtMe);
-      lookAtMe=null;
-    }
-  }
-
-  /* RUNNER */
-  if(runnerActive){
-    let dir=player.position.clone().sub(runner.position).normalize();
-    runner.position.add(dir.multiplyScalar(0.1));
-
-    if(player.position.distanceTo(runner.position)<2){
-      hp=0;
-    }
-  }
-
-  /* GATES */
-  chunks.forEach(c=>{
     let g=c.userData.gate;
     if(player.position.distanceTo(g.position)<3){
-
       gateCount++;
       document.getElementById("gate").innerText=gateCount;
-
-      if(gateCount==5) spawnSeeingMan();
-      if(gateCount==10) spawnLookAtMe();
-      if(gateCount>=19 && gateCount<=24) spawnRunner();
     }
   });
 
-  /* RAIN */
+  let dir = player.position.clone().sub(enemy.position).normalize();
+  enemy.position.add(dir.multiplyScalar(0.03));
+
   rain.forEach(r=>{
-    r.position.y-=0.5;
+    r.position.y -= 0.5;
     if(r.position.y<0) r.position.y=20;
   });
 
-  /* UI */
   document.getElementById("hp").innerText=Math.floor(hp);
 
   if(hp<=0){
