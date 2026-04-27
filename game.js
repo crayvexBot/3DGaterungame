@@ -1,5 +1,5 @@
 /* =========================
-   FORCE START (NO BUG)
+   SAFE START SYSTEM
 ========================= */
 window.onload = function(){
 
@@ -17,7 +17,7 @@ window.onload = function(){
   },2000);
 };
 
-/* crash protection */
+/* FORCE REMOVE UI IF ERROR */
 window.onerror = function(){
   let elevator = document.getElementById("elevator");
   let loading = document.getElementById("loading");
@@ -27,151 +27,123 @@ window.onerror = function(){
 };
 
 /* =========================
-   AUDIO
+   SAFE INIT
 ========================= */
-let audioCtx=null;
-
-function initAudio(){
-  if(audioCtx) return;
-
-  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-
-  // ambient
-  let osc=audioCtx.createOscillator();
-  let gain=audioCtx.createGain();
-
-  osc.frequency.value=60;
-  gain.gain.value=0.02;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-
-  document.removeEventListener("click",initAudio);
-  document.removeEventListener("touchstart",initAudio);
-}
-
-document.addEventListener("click",initAudio);
-document.addEventListener("touchstart",initAudio);
-
-function heartbeat(){
-  if(!audioCtx) return;
-
-  let o=audioCtx.createOscillator();
-  let g=audioCtx.createGain();
-
-  o.frequency.value=100;
-  g.gain.value=0.1;
-
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime+0.1);
-}
-
-function jumpscareSound(){
-  if(!audioCtx) return;
-
-  let o=audioCtx.createOscillator();
-  let g=audioCtx.createGain();
-
-  o.type="square";
-  o.frequency.value=300;
-  g.gain.value=0.3;
-
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime+0.3);
+if(typeof THREE === "undefined"){
+  alert("THREE.js failed to load!");
 }
 
 /* =========================
    SCENE
 ========================= */
-let scene=new THREE.Scene();
-scene.fog=new THREE.Fog(0x0a0a0a,10,80);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0a0a0a, 10, 80);
 
-let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+const camera = new THREE.PerspectiveCamera(75, innerWidth/window.innerHeight, 0.1, 1000);
 
-let renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* LIGHT */
-let ambient=new THREE.AmbientLight(0x404040,1.2);
+/* =========================
+   LIGHT
+========================= */
+const ambient = new THREE.AmbientLight(0x404040, 1.2);
 scene.add(ambient);
 
-let light=new THREE.PointLight(0xffffff,1.5,25);
+const light = new THREE.PointLight(0xffffff, 1.5, 25);
 scene.add(light);
 
-/* PLAYER */
-let player=new THREE.Object3D();
+/* =========================
+   PLAYER
+========================= */
+const player = new THREE.Object3D();
 scene.add(player);
 
 camera.position.set(0,1.6,0);
 player.add(camera);
 
-let yaw=0;
+let yaw = 0;
 
-document.addEventListener("mousemove",e=>{
-  yaw -= e.movementX*0.002;
-  player.rotation.y=yaw;
+/* LOOK */
+document.addEventListener("mousemove", e=>{
+  yaw -= e.movementX * 0.002;
+  player.rotation.y = yaw;
 });
 
-let lastX=null;
-document.addEventListener("touchmove",e=>{
-  if(e.touches.length!==1) return;
+let lastX = null;
 
-  let x=e.touches[0].clientX;
-  if(lastX!==null){
-    yaw -= (x-lastX)*0.005;
-    player.rotation.y=yaw;
+document.addEventListener("touchmove", e=>{
+  if(e.touches.length !== 1) return;
+
+  let x = e.touches[0].clientX;
+
+  if(lastX !== null){
+    yaw -= (x - lastX) * 0.005;
+    player.rotation.y = yaw;
   }
-  lastX=x;
+
+  lastX = x;
 });
 
-/* FLOOR */
-let floor=new THREE.Mesh(
+/* =========================
+   FLOOR
+========================= */
+const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(500,500),
   new THREE.MeshStandardMaterial({color:0x1f6b2e})
 );
-floor.rotation.x=-Math.PI/2;
+floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
-/* JOYSTICK */
-let joy={x:0,y:0};
-let base=document.getElementById("joyBase");
-let stick=document.getElementById("joyStick");
+/* =========================
+   JOYSTICK SAFE INIT
+========================= */
+let joy = {x:0,y:0};
 
-let dragging=false;
+const base = document.getElementById("joyBase");
+const stick = document.getElementById("joyStick");
 
-base.addEventListener("touchstart",()=>dragging=true);
-base.addEventListener("touchend",()=>{
-  dragging=false;
-  joy.x=0; joy.y=0;
-  stick.style.transform="translate(0,0)";
-});
+if(base && stick){
 
-base.addEventListener("touchmove",(e)=>{
-  if(!dragging) return;
+  let dragging=false;
 
-  let t=e.touches[0];
-  let r=base.getBoundingClientRect();
+  base.addEventListener("touchstart",()=>dragging=true);
 
-  let dx=t.clientX-r.left-60;
-  let dy=t.clientY-r.top-60;
+  base.addEventListener("touchend",()=>{
+    dragging=false;
+    joy.x=0; joy.y=0;
+    stick.style.transform="translate(0,0)";
+  });
 
-  let dist=Math.sqrt(dx*dx+dy*dy);
-  let max=40;
+  base.addEventListener("touchmove",(e)=>{
+    if(!dragging) return;
 
-  if(dist>max){
-    dx=dx/dist*max;
-    dy=dy/dist*max;
-  }
+    let t=e.touches[0];
+    let r=base.getBoundingClientRect();
 
-  joy.x=dx/max;
-  joy.y=dy/max;
+    let dx=t.clientX-r.left-60;
+    let dy=t.clientY-r.top-60;
 
-  stick.style.transform=`translate(${dx}px,${dy}px)`;
-});
+    let dist=Math.sqrt(dx*dx+dy*dy);
+    let max=40;
 
-/* ROOMS */
+    if(dist>max){
+      dx=dx/dist*max;
+      dy=dy/dist*max;
+    }
+
+    joy.x=dx/max;
+    joy.y=dy/max;
+
+    stick.style.transform=`translate(${dx}px,${dy}px)`;
+  });
+
+}
+
+/* =========================
+   ROOMS
+========================= */
 let chunks=[];
 
 function createChunk(z){
@@ -201,7 +173,13 @@ function createChunk(z){
       new THREE.SphereGeometry(0.3),
       new THREE.MeshStandardMaterial({color:0x66ff99})
     );
-    f.position.set((Math.random()-0.5)*15,0.3,z+(Math.random()-0.5)*15);
+
+    f.position.set(
+      (Math.random()-0.5)*15,
+      0.3,
+      z+(Math.random()-0.5)*15
+    );
+
     g.add(f);
     g.userData.flowers.push(f);
   }
@@ -210,6 +188,7 @@ function createChunk(z){
     new THREE.BoxGeometry(4,4,1),
     new THREE.MeshStandardMaterial({color:0x00aaff,wireframe:true})
   );
+
   gate.position.set(0,2,z-10);
   g.add(gate);
   g.userData.gate=gate;
@@ -218,24 +197,30 @@ function createChunk(z){
   chunks.push(g);
 }
 
+/* INIT */
 for(let i=0;i<6;i++){
   createChunk(-i*20);
-});
+}
 
-/* ENEMY */
-let enemy=new THREE.Mesh(
+/* =========================
+   ENEMY
+========================= */
+const enemy=new THREE.Mesh(
   new THREE.BoxGeometry(1,2,1),
   new THREE.MeshStandardMaterial({color:0xff0000})
 );
 enemy.position.set(5,1,-20);
 scene.add(enemy);
 
-/* GAME */
+/* =========================
+   GAME
+========================= */
 let hp=100;
 let gateCount=1;
-let heartbeatTimer=0;
 
-/* UPDATE */
+/* =========================
+   UPDATE
+========================= */
 function update(){
 
   let speed=0.08;
@@ -254,6 +239,7 @@ function update(){
   }
 
   chunks.forEach(c=>{
+
     c.userData.flowers.forEach(f=>{
       if(player.position.distanceTo(f.position)<1){
         hp -= 0.2;
@@ -265,29 +251,24 @@ function update(){
       gateCount++;
       document.getElementById("gate").innerText=gateCount;
     }
+
   });
 
   let dir=player.position.clone().sub(enemy.position).normalize();
   enemy.position.add(dir.multiplyScalar(0.04));
 
-  if(hp<50){
-    heartbeatTimer++;
-    if(heartbeatTimer>60){
-      heartbeat();
-      heartbeatTimer=0;
-    }
-  }
+  document.getElementById("hp").innerText=Math.floor(hp);
 
   if(player.position.distanceTo(enemy.position)<2){
-    jumpscareSound();
     document.body.style.background="red";
-    setTimeout(()=>location.reload(),1500);
+    setTimeout(()=>location.reload(),1200);
   }
 
-  document.getElementById("hp").innerText=Math.floor(hp);
 }
 
-/* LOOP */
+/* =========================
+   LOOP
+========================= */
 function animate(){
   requestAnimationFrame(animate);
   update();
