@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Gate Run 3D</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
+</head>
+
+<body>
+
+<!-- INTRO UI -->
+<div id="intro">
+  <h1>🚪 GATE RUN</h1>
+  <button onclick="startElevator()">CREATE ELEVATOR</button>
+</div>
+
+<!-- ELEVATOR -->
+<div id="elevator">
+  <h2>🛗 Elevator Running...</h2>
+  <div id="bar"></div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <h2>LOADING...</h2>
+  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+</div>
+
+<!-- GAME UI -->
+<div id="ui">
+  <h2>Gate: <span id="gate">1</span></h2>
+  <h3>HP: <span id="hp">100</span></h3>
+</div>
+
+<!-- JOYSTICK -->
+<div id="joystick">
+  <div id="stick"></div>
+</div>
+
+<script src="game.js"></script>
+
+</body>
+</html>

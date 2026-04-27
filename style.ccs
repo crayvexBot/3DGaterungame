@@ -1,0 +1,122 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  font-family: Arial;
+}
+
+/* INTRO */
+#intro {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ELEVATOR */
+#elevator {
+  display: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+#bar {
+  width: 200px;
+  height: 10px;
+  background: gray;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+#bar::after {
+  content: "";
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: lime;
+  animation: load 5s linear forwards;
+}
+
+@keyframes load {
+  100% { width: 100%; }
+}
+
+/* LOADING */
+#loading {
+  display: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background: white;
+  margin: 5px;
+  display: inline-block;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* UI */
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  z-index: 10;
+}
+
+/* JOYSTICK */
+#joystick {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+#stick {
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 35px;
+  left: 35px;
+}
+
+/* JUMPSCARE */
+#jumpscare {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: red;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  color: black;
+}
