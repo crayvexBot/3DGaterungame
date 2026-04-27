@@ -1,20 +1,70 @@
 /* =========================
-   ELEVATOR FLOW
+   AUDIO SYSTEM
 ========================= */
-window.addEventListener("load", () => {
-  let elevator = document.getElementById("elevator");
-  let loading = document.getElementById("loading");
+let audioCtx = null;
 
-  setTimeout(()=>{
-    elevator.style.display="none";
-    loading.style.display="flex";
+function initAudio(){
+  if(audioCtx) return;
 
-    setTimeout(()=>{
-      loading.style.display="none";
-    },2000);
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  },3000);
-});
+  // ambient wind
+  playAmbient();
+
+  document.removeEventListener("click", initAudio);
+  document.removeEventListener("touchstart", initAudio);
+}
+
+document.addEventListener("click", initAudio);
+document.addEventListener("touchstart", initAudio);
+
+/* AMBIENT SOUND */
+function playAmbient(){
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = 60;
+
+  gain.gain.value = 0.02;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+}
+
+/* HEARTBEAT */
+function heartbeat(){
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+
+  osc.frequency.value = 100;
+  gain.gain.value = 0.1;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+/* JUMPSCARE SOUND */
+function jumpscareSound(){
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+
+  osc.type = "square";
+  osc.frequency.value = 300;
+
+  gain.gain.value = 0.3;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.3);
+}
 
 /* =========================
    SCENE
@@ -28,16 +78,14 @@ let renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* LIGHTING (FIXED) */
+/* LIGHT */
 let ambient = new THREE.AmbientLight(0x404040, 1.2);
 scene.add(ambient);
 
 let light = new THREE.PointLight(0xffffff, 1.5, 25);
 scene.add(light);
 
-/* =========================
-   PLAYER
-========================= */
+/* PLAYER */
 let player = new THREE.Object3D();
 scene.add(player);
 
@@ -46,6 +94,7 @@ player.add(camera);
 
 let yaw=0;
 
+/* LOOK */
 document.addEventListener("mousemove", e=>{
   yaw -= e.movementX * 0.002;
   player.rotation.y = yaw;
@@ -54,7 +103,6 @@ document.addEventListener("mousemove", e=>{
 let lastX=null;
 document.addEventListener("touchmove", e=>{
   if(e.touches.length!==1) return;
-
   let x=e.touches[0].clientX;
   if(lastX!==null){
     yaw -= (x-lastX)*0.005;
@@ -63,9 +111,7 @@ document.addEventListener("touchmove", e=>{
   lastX=x;
 });
 
-/* =========================
-   FLOOR
-========================= */
+/* FLOOR */
 let floor = new THREE.Mesh(
   new THREE.PlaneGeometry(500,500),
   new THREE.MeshStandardMaterial({color:0x1f6b2e})
@@ -73,9 +119,7 @@ let floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
-/* =========================
-   JOYSTICK
-========================= */
+/* JOYSTICK */
 let joy={x:0,y:0};
 let base=document.getElementById("joyBase");
 let stick=document.getElementById("joyStick");
@@ -112,21 +156,18 @@ base.addEventListener("touchmove",(e)=>{
   stick.style.transform=`translate(${dx}px,${dy}px)`;
 });
 
-/* =========================
-   ROOMS
-========================= */
+/* ROOMS */
 let chunks=[];
 
 function createChunk(z){
-
   let g=new THREE.Group();
 
-  let floorSeg = new THREE.Mesh(
+  let seg=new THREE.Mesh(
     new THREE.BoxGeometry(20,1,20),
     new THREE.MeshStandardMaterial({color:0x1f6b2e})
   );
-  floorSeg.position.set(0,0,z);
-  g.add(floorSeg);
+  seg.position.set(0,0,z);
+  g.add(seg);
 
   let wallMat=new THREE.MeshStandardMaterial({color:0x222222});
 
@@ -163,11 +204,9 @@ function createChunk(z){
 
 for(let i=0;i<6;i++){
   createChunk(-i*20);
-});
+}
 
-/* =========================
-   ENEMY
-========================= */
+/* ENEMY */
 let enemy = new THREE.Mesh(
   new THREE.BoxGeometry(1,2,1),
   new THREE.MeshStandardMaterial({color:0xff0000})
@@ -175,29 +214,12 @@ let enemy = new THREE.Mesh(
 enemy.position.set(5,1,-20);
 scene.add(enemy);
 
-/* =========================
-   RAIN
-========================= */
-let rain=[];
-for(let i=0;i<200;i++){
-  let d=new THREE.Mesh(
-    new THREE.BoxGeometry(0.05,0.5,0.05),
-    new THREE.MeshBasicMaterial({color:0xaaaaaa})
-  );
-  d.position.set((Math.random()-0.5)*50,Math.random()*20,(Math.random()-0.5)*50);
-  scene.add(d);
-  rain.push(d);
-}
-
-/* =========================
-   GAME
-========================= */
+/* GAME */
 let hp=100;
 let gateCount=1;
+let heartbeatTimer=0;
 
-/* =========================
-   UPDATE
-========================= */
+/* UPDATE */
 function update(){
 
   let speed=0.08;
@@ -205,7 +227,6 @@ function update(){
   let fwd=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
   let right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
 
-  // FIXED CONTROLS
   player.position.addScaledVector(fwd, -joy.y * speed);
   player.position.addScaledVector(right, joy.x * speed);
 
@@ -230,25 +251,30 @@ function update(){
     }
   });
 
+  /* ENEMY AI */
   let dir = player.position.clone().sub(enemy.position).normalize();
-  enemy.position.add(dir.multiplyScalar(0.03));
+  enemy.position.add(dir.multiplyScalar(0.04));
 
-  rain.forEach(r=>{
-    r.position.y -= 0.5;
-    if(r.position.y<0) r.position.y=20;
-  });
+  /* HEARTBEAT */
+  if(hp < 50){
+    heartbeatTimer++;
+    if(heartbeatTimer > 60){
+      heartbeat();
+      heartbeatTimer = 0;
+    }
+  }
 
-  document.getElementById("hp").innerText=Math.floor(hp);
-
-  if(hp<=0){
+  /* JUMPSCARE */
+  if(player.position.distanceTo(enemy.position)<2){
+    jumpscareSound();
     document.body.style.background="red";
     setTimeout(()=>location.reload(),1500);
   }
+
+  document.getElementById("hp").innerText=Math.floor(hp);
 }
 
-/* =========================
-   LOOP
-========================= */
+/* LOOP */
 function animate(){
   requestAnimationFrame(animate);
   update();
@@ -256,5 +282,3 @@ function animate(){
 }
 
 animate();
-
-
