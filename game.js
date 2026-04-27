@@ -248,6 +248,25 @@ function animate(){
 }
 
 animate();
+  /* RAIN UPDATE */
+  rain.forEach(r=>{
+    r.position.y -= 0.5;
+    if(r.position.y < 0){
+      r.position.y = 20;
+    }
+  });
+}
+
+/* =========================
+   LOOP
+========================= */
+function animate(){
+  requestAnimationFrame(animate);
+  update();
+  renderer.render(scene,camera);
+}
+
+animate();
   g.position.set(0,2,z);
   scene.add(g);
   gates.push(g);
