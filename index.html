@@ -2,33 +2,54 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
-<title>Gate Run 3D</title>
+<title>Gate Run Mobile 3D</title>
 
 <style>
-body { margin: 0; overflow: hidden; font-family: Arial; background:black; }
+body { margin:0; overflow:hidden; background:black; font-family:Arial; }
+
 #ui {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  color: white;
-  z-index: 10;
+  position:absolute;
+  top:10px;
+  left:10px;
+  color:white;
+  z-index:10;
 }
-button { padding: 8px; margin-top: 5px; }
+
+/* JOYSTICK */
+#joyBase {
+  position:absolute;
+  bottom:40px;
+  left:40px;
+  width:120px;
+  height:120px;
+  background:rgba(255,255,255,0.1);
+  border-radius:50%;
+}
+
+#joyStick {
+  position:absolute;
+  width:50px;
+  height:50px;
+  background:white;
+  border-radius:50%;
+  top:35px;
+  left:35px;
+}
 
 /* JUMPSCARE */
 #jumpscare {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: red;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  font-size: 50px;
-  color: black;
-  z-index: 999;
+  position:absolute;
+  width:100%;
+  height:100%;
+  background:red;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  font-size:50px;
+  color:black;
+  z-index:999;
 }
 </style>
 
@@ -38,8 +59,12 @@ button { padding: 8px; margin-top: 5px; }
 <body>
 
 <div id="ui">
-  <h2>🚪 Gate: <span id="gate">1</span>/50</h2>
+  <h2>🚪 Gate: <span id="gate">1</span></h2>
   <h3>❤️ HP: <span id="hp">100</span></h3>
+</div>
+
+<div id="joyBase">
+  <div id="joyStick"></div>
 </div>
 
 <div id="jumpscare">YOU DIED</div>
