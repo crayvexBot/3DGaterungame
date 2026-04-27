@@ -1,4 +1,23 @@
 /* =========================
+   ELEVATOR FLOW
+========================= */
+window.addEventListener("load", () => {
+
+  let elevator = document.getElementById("elevator");
+  let loading = document.getElementById("loading");
+
+  setTimeout(() => {
+    elevator.style.display = "none";
+    loading.style.display = "flex";
+
+    setTimeout(() => {
+      loading.style.display = "none";
+    }, 2000);
+
+  }, 3000);
+});
+
+/* =========================
    SCENE
 ========================= */
 let scene = new THREE.Scene();
@@ -24,11 +43,29 @@ scene.add(player);
 camera.position.set(0,1.6,0);
 player.add(camera);
 
-/* CAMERA LOOK */
 let yaw = 0;
+
+/* MOUSE LOOK (PC) */
 document.addEventListener("mousemove", e=>{
   yaw -= e.movementX * 0.002;
   player.rotation.y = yaw;
+});
+
+/* TOUCH LOOK (MOBILE) */
+let lastX = null;
+
+document.addEventListener("touchmove", e=>{
+  if(e.touches.length !== 1) return;
+
+  let x = e.touches[0].clientX;
+
+  if(lastX !== null){
+    let dx = x - lastX;
+    yaw -= dx * 0.005;
+    player.rotation.y = yaw;
+  }
+
+  lastX = x;
 });
 
 /* =========================
@@ -83,7 +120,7 @@ base.addEventListener("touchmove",(e)=>{
 /* =========================
    INFINITE ROOMS
 ========================= */
-let chunks = [];
+let chunks=[];
 
 function createChunk(z){
 
@@ -108,7 +145,8 @@ function createChunk(z){
 
   group.add(w1); group.add(w2);
 
-  // flowers (hazard)
+  // flowers
+  group.userData.flowers = [];
   for(let i=0;i<5;i++){
     let f = new THREE.Mesh(
       new THREE.SphereGeometry(0.3),
@@ -122,11 +160,10 @@ function createChunk(z){
     );
 
     group.add(f);
-    group.userData.flowers = group.userData.flowers || [];
     group.userData.flowers.push(f);
   }
 
-  // gate at end
+  // gate
   let gate = new THREE.Mesh(
     new THREE.BoxGeometry(4,4,1),
     new THREE.MeshStandardMaterial({color:0x00aaff, wireframe:true})
@@ -140,13 +177,13 @@ function createChunk(z){
   chunks.push(group);
 }
 
-/* initial chunks */
+/* INIT */
 for(let i=0;i<5;i++){
   createChunk(-i*20);
 }
 
 /* =========================
-   ENTITY (AI)
+   ENEMY AI
 ========================= */
 let enemy = new THREE.Mesh(
   new THREE.BoxGeometry(1,2,1),
@@ -186,7 +223,7 @@ let gateCount=1;
 ========================= */
 function update(){
 
-  let speed = 0.08; // FIXED SPEED
+  let speed = 0.08;
 
   let forward = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
   let right = new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
@@ -194,168 +231,40 @@ function update(){
   player.position.addScaledVector(forward, joy.y * speed);
   player.position.addScaledVector(right, joy.x * speed);
 
-  /* CAMERA FOLLOW */
   camera.position.copy(player.position);
 
-  /* INFINITE MAP */
-  if(player.position.z < chunks[chunks.length-1].position?.z - 40){
-    createChunk(chunks.length * -20);
+  /* spawn more chunks */
+  if(player.position.z < -(chunks.length-2)*20){
+    createChunk(-chunks.length*20);
   }
 
-  /* FLOWER DAMAGE */
+  /* flowers damage */
   chunks.forEach(c=>{
-    if(!c.userData.flowers) return;
-
     c.userData.flowers.forEach(f=>{
       if(player.position.distanceTo(f.position)<1){
-        hp -= 0.1;
+        hp -= 0.2;
         document.getElementById("hp").innerText=Math.floor(hp);
       }
     });
   });
 
-  /* GATE */
+  /* gate check */
   chunks.forEach(c=>{
     let g = c.userData.gate;
-    if(!g) return;
-
     if(player.position.distanceTo(g.position)<3){
       gateCount++;
       document.getElementById("gate").innerText=gateCount;
     }
   });
 
-  /* ENEMY AI */
+  /* enemy follow */
   let dir = player.position.clone().sub(enemy.position).normalize();
   enemy.position.add(dir.multiplyScalar(0.03));
 
-  /* RAIN UPDATE */
+  /* rain */
   rain.forEach(r=>{
     r.position.y -= 0.5;
-    if(r.position.y < 0){
-      r.position.y = 20;
-    }
-  });
-}
-
-/* =========================
-   LOOP
-========================= */
-function animate(){
-  requestAnimationFrame(animate);
-  update();
-  renderer.render(scene,camera);
-}
-
-animate();
-  /* RAIN UPDATE */
-  rain.forEach(r=>{
-    r.position.y -= 0.5;
-    if(r.position.y < 0){
-      r.position.y = 20;
-    }
-  });
-}
-
-/* =========================
-   LOOP
-========================= */
-function animate(){
-  requestAnimationFrame(animate);
-  update();
-  renderer.render(scene,camera);
-}
-
-animate();
-  g.position.set(0,2,z);
-  scene.add(g);
-  gates.push(g);
-}
-
-/* =========================
-   LEVEL GENERATION
-========================= */
-function generateLevel(){
-
-  clearWalls();
-  gates.forEach(g=>scene.remove(g));
-  gates=[];
-
-  for(let i=0;i<6;i++){
-    let z = -i*20;
-    spawnRoom(z);
-  }
-
-  spawnGate(-100);
-}
-
-generateLevel();
-
-/* =========================
-   ENTITIES (HOOKS READY)
-========================= */
-function spawnLookAtMe(){
-
-  let e = new THREE.Mesh(
-    new THREE.SphereGeometry(1),
-    new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.5})
-  );
-
-  e.position.set((Math.random()-0.5)*10,1.5,-30);
-  scene.add(e);
-}
-
-/* =========================
-   ELEVATOR SEQUENCE
-========================= */
-setTimeout(()=>{
-
-  document.getElementById("elevator").style.display="none";
-  document.getElementById("loading").style.display="flex";
-
-  setTimeout(()=>{
-
-    document.getElementById("loading").style.display="none";
-
-  },3000);
-
-},4000);
-
-/* =========================
-   MOVEMENT (FPS STYLE)
-========================= */
-function update(){
-
-  // forward direction
-  let forward = new THREE.Vector3(0,0,-1);
-  let right = new THREE.Vector3(1,0,0);
-
-  forward.applyQuaternion(player.quaternion);
-  right.applyQuaternion(player.quaternion);
-
-  player.position.addScaledVector(forward, joy.y*0.2);
-  player.position.addScaledVector(right, joy.x*0.2);
-
-  checkGates();
-}
-
-/* =========================
-   GATE CHECK
-========================= */
-function checkGates(){
-
-  gates.forEach(g=>{
-    if(player.position.distanceTo(g.position)<3){
-
-      gate++;
-      document.getElementById("gate").innerText=gate;
-
-      player.position.z -= 20;
-
-      generateLevel();
-
-      if(Math.random()<0.5) spawnLookAtMe();
-    }
+    if(r.position.y < 0) r.position.y = 20;
   });
 }
 
