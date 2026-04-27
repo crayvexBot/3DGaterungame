@@ -2,26 +2,25 @@
    ELEVATOR FLOW
 ========================= */
 window.addEventListener("load", () => {
-
   let elevator = document.getElementById("elevator");
   let loading = document.getElementById("loading");
 
-  setTimeout(() => {
-    elevator.style.display = "none";
-    loading.style.display = "flex";
+  setTimeout(()=>{
+    elevator.style.display="none";
+    loading.style.display="flex";
 
-    setTimeout(() => {
-      loading.style.display = "none";
-    }, 2000);
+    setTimeout(()=>{
+      loading.style.display="none";
+    },2000);
 
-  }, 3000);
+  },3000);
 });
 
 /* =========================
    SCENE
 ========================= */
 let scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0a0a0a, 5, 80);
+scene.fog = new THREE.Fog(0x000000, 5, 50);
 
 let camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
@@ -29,13 +28,12 @@ let renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* LIGHT */
-let light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5,10,5);
+/* LIGHT (FLASHLIGHT ONLY) */
+let light = new THREE.PointLight(0xffffff, 1, 20);
 scene.add(light);
 
 /* =========================
-   PLAYER (FPS)
+   PLAYER
 ========================= */
 let player = new THREE.Object3D();
 scene.add(player);
@@ -43,29 +41,24 @@ scene.add(player);
 camera.position.set(0,1.6,0);
 player.add(camera);
 
-let yaw = 0;
+let yaw=0;
 
-/* MOUSE LOOK (PC) */
+/* LOOK */
 document.addEventListener("mousemove", e=>{
   yaw -= e.movementX * 0.002;
   player.rotation.y = yaw;
 });
 
-/* TOUCH LOOK (MOBILE) */
-let lastX = null;
-
+let lastX=null;
 document.addEventListener("touchmove", e=>{
-  if(e.touches.length !== 1) return;
+  if(e.touches.length!==1) return;
 
-  let x = e.touches[0].clientX;
-
-  if(lastX !== null){
-    let dx = x - lastX;
-    yaw -= dx * 0.005;
-    player.rotation.y = yaw;
+  let x=e.touches[0].clientX;
+  if(lastX!==null){
+    yaw -= (x-lastX)*0.005;
+    player.rotation.y=yaw;
   }
-
-  lastX = x;
+  lastX=x;
 });
 
 /* =========================
@@ -73,7 +66,7 @@ document.addEventListener("touchmove", e=>{
 ========================= */
 let floor = new THREE.Mesh(
   new THREE.PlaneGeometry(500,500),
-  new THREE.MeshStandardMaterial({color:0x1b3d1f})
+  new THREE.MeshStandardMaterial({color:0x0d2d13})
 );
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
@@ -81,9 +74,9 @@ scene.add(floor);
 /* =========================
    JOYSTICK
 ========================= */
-let joy = {x:0,y:0};
-let base = document.getElementById("joyBase");
-let stick = document.getElementById("joyStick");
+let joy={x:0,y:0};
+let base=document.getElementById("joyBase");
+let stick=document.getElementById("joyStick");
 
 let dragging=false;
 
@@ -118,98 +111,117 @@ base.addEventListener("touchmove",(e)=>{
 });
 
 /* =========================
-   INFINITE ROOMS
+   ROOMS
 ========================= */
 let chunks=[];
 
 function createChunk(z){
 
-  let group = new THREE.Group();
+  let g=new THREE.Group();
 
-  // floor
-  let seg = new THREE.Mesh(
+  let floorSeg = new THREE.Mesh(
     new THREE.BoxGeometry(20,1,20),
-    new THREE.MeshStandardMaterial({color:0x145c2b})
+    new THREE.MeshStandardMaterial({color:0x123f1c})
   );
-  seg.position.set(0,0,z);
-  group.add(seg);
+  floorSeg.position.set(0,0,z);
+  g.add(floorSeg);
 
-  // walls
-  let wallMat = new THREE.MeshStandardMaterial({color:0x333333});
+  let wallMat=new THREE.MeshStandardMaterial({color:0x111111});
 
-  let w1 = new THREE.Mesh(new THREE.BoxGeometry(1,4,20), wallMat);
-  let w2 = new THREE.Mesh(new THREE.BoxGeometry(1,4,20), wallMat);
+  let w1=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
+  let w2=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
 
   w1.position.set(-10,2,z);
   w2.position.set(10,2,z);
 
-  group.add(w1); group.add(w2);
+  g.add(w1); g.add(w2);
 
-  // flowers
-  group.userData.flowers = [];
-  for(let i=0;i<5;i++){
-    let f = new THREE.Mesh(
+  /* FLOWERS */
+  g.userData.flowers=[];
+  for(let i=0;i<6;i++){
+    let f=new THREE.Mesh(
       new THREE.SphereGeometry(0.3),
-      new THREE.MeshStandardMaterial({color:0x66ff99})
+      new THREE.MeshStandardMaterial({color:0x33ff88})
     );
-
-    f.position.set(
-      (Math.random()-0.5)*15,
-      0.3,
-      z + (Math.random()-0.5)*15
-    );
-
-    group.add(f);
-    group.userData.flowers.push(f);
+    f.position.set((Math.random()-0.5)*15,0.3,z+(Math.random()-0.5)*15);
+    g.add(f);
+    g.userData.flowers.push(f);
   }
 
-  // gate
-  let gate = new THREE.Mesh(
+  /* GATE */
+  let gate=new THREE.Mesh(
     new THREE.BoxGeometry(4,4,1),
-    new THREE.MeshStandardMaterial({color:0x00aaff, wireframe:true})
+    new THREE.MeshStandardMaterial({color:0x00aaff,wireframe:true})
   );
-
   gate.position.set(0,2,z-10);
-  group.add(gate);
-  group.userData.gate = gate;
+  g.add(gate);
+  g.userData.gate=gate;
 
-  scene.add(group);
-  chunks.push(group);
+  scene.add(g);
+  chunks.push(g);
 }
 
 /* INIT */
-for(let i=0;i<5;i++){
+for(let i=0;i<6;i++){
   createChunk(-i*20);
 }
 
 /* =========================
-   ENEMY AI
+   ENTITIES
 ========================= */
-let enemy = new THREE.Mesh(
-  new THREE.BoxGeometry(1,2,1),
-  new THREE.MeshStandardMaterial({color:0xff0000})
-);
-enemy.position.set(5,1,-20);
-scene.add(enemy);
+
+/* SEEING MAN */
+let seeingMan=null;
+
+function spawnSeeingMan(){
+  seeingMan=new THREE.Mesh(
+    new THREE.BoxGeometry(1,2,1),
+    new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.2})
+  );
+  seeingMan.position.set(0,1,-20);
+  scene.add(seeingMan);
+}
+
+/* LOOK AT ME */
+let lookAtMe=null;
+let lookTimer=0;
+
+function spawnLookAtMe(){
+  lookAtMe=new THREE.Mesh(
+    new THREE.SphereGeometry(1),
+    new THREE.MeshStandardMaterial({color:0xffffff})
+  );
+  lookAtMe.position.set(0,2,-15);
+  scene.add(lookAtMe);
+  lookTimer=10;
+}
+
+/* RUNNER */
+let runner=null;
+let runnerActive=false;
+
+function spawnRunner(){
+  runner=new THREE.Mesh(
+    new THREE.BoxGeometry(2,3,2),
+    new THREE.MeshStandardMaterial({color:0xff0000})
+  );
+  runner.position.set(0,1,-30);
+  scene.add(runner);
+  runnerActive=true;
+}
 
 /* =========================
    RAIN
 ========================= */
 let rain=[];
-for(let i=0;i<200;i++){
-  let drop = new THREE.Mesh(
+for(let i=0;i<300;i++){
+  let d=new THREE.Mesh(
     new THREE.BoxGeometry(0.05,0.5,0.05),
     new THREE.MeshBasicMaterial({color:0xaaaaaa})
   );
-
-  drop.position.set(
-    (Math.random()-0.5)*50,
-    Math.random()*20,
-    (Math.random()-0.5)*50
-  );
-
-  scene.add(drop);
-  rain.push(drop);
+  d.position.set((Math.random()-0.5)*60,Math.random()*20,(Math.random()-0.5)*60);
+  scene.add(d);
+  rain.push(d);
 }
 
 /* =========================
@@ -223,49 +235,88 @@ let gateCount=1;
 ========================= */
 function update(){
 
-  let speed = 0.08;
+  let speed=0.08;
 
-  let forward = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
-  let right = new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+  let fwd=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
+  let right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
 
-  player.position.addScaledVector(forward, joy.y * speed);
-  player.position.addScaledVector(right, joy.x * speed);
+  player.position.addScaledVector(fwd,joy.y*speed);
+  player.position.addScaledVector(right,joy.x*speed);
 
   camera.position.copy(player.position);
 
-  /* spawn more chunks */
+  /* FLASHLIGHT FOLLOW */
+  light.position.copy(camera.position);
+
+  /* SPAWN CHUNKS */
   if(player.position.z < -(chunks.length-2)*20){
     createChunk(-chunks.length*20);
   }
 
-  /* flowers damage */
+  /* FLOWER DAMAGE */
   chunks.forEach(c=>{
     c.userData.flowers.forEach(f=>{
       if(player.position.distanceTo(f.position)<1){
-        hp -= 0.2;
-        document.getElementById("hp").innerText=Math.floor(hp);
+        hp-=0.2;
       }
     });
   });
 
-  /* gate check */
+  /* SEEING MAN */
+  if(seeingMan){
+    let dist=camera.position.distanceTo(seeingMan.position);
+    if(dist<6){
+      hp-=0.05;
+    }
+  }
+
+  /* LOOK AT ME */
+  if(lookAtMe){
+    lookTimer -= 0.016;
+    if(lookTimer<=0){
+      hp-=50;
+      scene.remove(lookAtMe);
+      lookAtMe=null;
+    }
+  }
+
+  /* RUNNER */
+  if(runnerActive){
+    let dir=player.position.clone().sub(runner.position).normalize();
+    runner.position.add(dir.multiplyScalar(0.1));
+
+    if(player.position.distanceTo(runner.position)<2){
+      hp=0;
+    }
+  }
+
+  /* GATES */
   chunks.forEach(c=>{
-    let g = c.userData.gate;
+    let g=c.userData.gate;
     if(player.position.distanceTo(g.position)<3){
+
       gateCount++;
       document.getElementById("gate").innerText=gateCount;
+
+      if(gateCount==5) spawnSeeingMan();
+      if(gateCount==10) spawnLookAtMe();
+      if(gateCount>=19 && gateCount<=24) spawnRunner();
     }
   });
 
-  /* enemy follow */
-  let dir = player.position.clone().sub(enemy.position).normalize();
-  enemy.position.add(dir.multiplyScalar(0.03));
-
-  /* rain */
+  /* RAIN */
   rain.forEach(r=>{
-    r.position.y -= 0.5;
-    if(r.position.y < 0) r.position.y = 20;
+    r.position.y-=0.5;
+    if(r.position.y<0) r.position.y=20;
   });
+
+  /* UI */
+  document.getElementById("hp").innerText=Math.floor(hp);
+
+  if(hp<=0){
+    document.body.style.background="red";
+    setTimeout(()=>location.reload(),1500);
+  }
 }
 
 /* =========================
