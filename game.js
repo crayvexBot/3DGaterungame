@@ -1,5 +1,7 @@
+let gameStarted = false;
+
 /* =========================
-   SAFE START SYSTEM
+   START SYSTEM
 ========================= */
 window.onload = function(){
 
@@ -7,51 +9,34 @@ window.onload = function(){
   const loading = document.getElementById("loading");
 
   setTimeout(()=>{
+
     if(elevator) elevator.style.display = "none";
     if(loading) loading.style.display = "flex";
 
     setTimeout(()=>{
       if(loading) loading.style.display = "none";
+      gameStarted = true;
     },1500);
 
   },2000);
 };
 
-/* FORCE REMOVE UI IF ERROR */
-window.onerror = function(){
-  let elevator = document.getElementById("elevator");
-  let loading = document.getElementById("loading");
-
-  if(elevator) elevator.style.display="none";
-  if(loading) loading.style.display="none";
-};
-
 /* =========================
-   SAFE INIT
-========================= */
-if(typeof THREE === "undefined"){
-  alert("THREE.js failed to load!");
-}
-
-/* =========================
-   SCENE
+   THREE SETUP
 ========================= */
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0a0a0a, 10, 80);
+scene.fog = new THREE.Fog(0x0a0a0a, 10, 90);
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, window.innerHeight);
+renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* =========================
-   LIGHT
-========================= */
-const ambient = new THREE.AmbientLight(0x404040, 1.2);
-scene.add(ambient);
+/* LIGHT */
+scene.add(new THREE.AmbientLight(0x404040, 1.2));
 
-const light = new THREE.PointLight(0xffffff, 1.5, 25);
+const light = new THREE.PointLight(0xffffff, 1.5, 30);
 scene.add(light);
 
 /* =========================
@@ -65,46 +50,27 @@ player.add(camera);
 
 let yaw = 0;
 
-/* LOOK */
 document.addEventListener("mousemove", e=>{
   yaw -= e.movementX * 0.002;
   player.rotation.y = yaw;
 });
 
-let lastX = null;
-
-document.addEventListener("touchmove", e=>{
-  if(e.touches.length !== 1) return;
-
-  let x = e.touches[0].clientX;
-
-  if(lastX !== null){
-    yaw -= (x - lastX) * 0.005;
-    player.rotation.y = yaw;
-  }
-
-  lastX = x;
-});
-
 /* =========================
-   FLOOR
+   UI
 ========================= */
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(500,500),
-  new THREE.MeshStandardMaterial({color:0x1f6b2e})
-);
-floor.rotation.x = -Math.PI/2;
-scene.add(floor);
+const eatBtn = document.getElementById("eatBtn");
+const hpUI = document.getElementById("hp");
+const foodUI = document.getElementById("food");
 
 /* =========================
-   JOYSTICK SAFE INIT
+   JOYSTICK
 ========================= */
 let joy = {x:0,y:0};
 
 const base = document.getElementById("joyBase");
 const stick = document.getElementById("joyStick");
 
-if(base && stick){
+if(base){
 
   let dragging=false;
 
@@ -138,137 +104,203 @@ if(base && stick){
 
     stick.style.transform=`translate(${dx}px,${dy}px)`;
   });
-
 }
 
 /* =========================
-   ROOMS
+   WORLD SYSTEM
 ========================= */
-let chunks=[];
+let rooms = [];
+let walls = [];
+let foodItems = [];
 
-function createChunk(z){
+let currentZ = 0;
+const ROOM_SIZE = 25;
 
-  let g=new THREE.Group();
+/* ROOM */
+function createRoom(z){
 
-  let seg=new THREE.Mesh(
-    new THREE.BoxGeometry(20,1,20),
+  let g = new THREE.Group();
+
+  let floor = new THREE.Mesh(
+    new THREE.BoxGeometry(20,1,ROOM_SIZE),
     new THREE.MeshStandardMaterial({color:0x1f6b2e})
   );
-  seg.position.set(0,0,z);
-  g.add(seg);
+  floor.position.set(0,0,z);
+  g.add(floor);
 
-  let wallMat=new THREE.MeshStandardMaterial({color:0x222222});
+  let wallMat = new THREE.MeshStandardMaterial({color:0x222});
 
-  let w1=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
-  let w2=new THREE.Mesh(new THREE.BoxGeometry(1,4,20),wallMat);
+  let left = new THREE.Mesh(new THREE.BoxGeometry(1,4,ROOM_SIZE), wallMat);
+  let right = new THREE.Mesh(new THREE.BoxGeometry(1,4,ROOM_SIZE), wallMat);
+  let back = new THREE.Mesh(new THREE.BoxGeometry(20,4,1), wallMat);
 
-  w1.position.set(-10,2,z);
-  w2.position.set(10,2,z);
+  left.position.set(-10,2,z);
+  right.position.set(10,2,z);
+  back.position.set(0,2,z+ROOM_SIZE/2);
 
-  g.add(w1); g.add(w2);
+  g.add(left,right,back);
+  walls.push(left,right,back);
 
-  g.userData.flowers=[];
-  for(let i=0;i<6;i++){
-    let f=new THREE.Mesh(
-      new THREE.SphereGeometry(0.3),
-      new THREE.MeshStandardMaterial({color:0x66ff99})
-    );
-
-    f.position.set(
-      (Math.random()-0.5)*15,
-      0.3,
-      z+(Math.random()-0.5)*15
-    );
-
-    g.add(f);
-    g.userData.flowers.push(f);
-  }
-
-  let gate=new THREE.Mesh(
-    new THREE.BoxGeometry(4,4,1),
+  /* GATE */
+  let gate = new THREE.Mesh(
+    new THREE.BoxGeometry(3,4,1),
     new THREE.MeshStandardMaterial({color:0x00aaff,wireframe:true})
   );
 
-  gate.position.set(0,2,z-10);
+  gate.position.set((Math.random()-0.5)*6,2,z-ROOM_SIZE/2);
   g.add(gate);
-  g.userData.gate=gate;
+
+  /* TABLE */
+  let table = new THREE.Mesh(
+    new THREE.BoxGeometry(4,1,2),
+    new THREE.MeshStandardMaterial({color:0x8b5a2b})
+  );
+
+  table.position.set((Math.random()>0.5?4:-4),0.5,z+(Math.random()-2));
+  g.add(table);
+
+  /* FOOD */
+  let food = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4),
+    new THREE.MeshStandardMaterial({color:0xffcc66})
+  );
+
+  food.position.set(table.position.x,1.2,table.position.z);
+  food.userData.eaten=false;
+
+  g.add(food);
+  foodItems.push(food);
 
   scene.add(g);
-  chunks.push(g);
+  rooms.push(g);
 }
 
 /* INIT */
 for(let i=0;i<6;i++){
-  createChunk(-i*20);
+  createRoom(-i*ROOM_SIZE);
 }
 
 /* =========================
-   ENEMY
+   COLLISION
 ========================= */
-const enemy=new THREE.Mesh(
-  new THREE.BoxGeometry(1,2,1),
-  new THREE.MeshStandardMaterial({color:0xff0000})
-);
-enemy.position.set(5,1,-20);
-scene.add(enemy);
+function checkCollision(pos){
+
+  let box = new THREE.Box3().setFromCenterAndSize(
+    pos,new THREE.Vector3(1,2,1)
+  );
+
+  for(let w of walls){
+    if(box.intersectsBox(new THREE.Box3().setFromObject(w)))
+      return true;
+  }
+
+  return false;
+}
 
 /* =========================
-   GAME
+   HALLUCINATION
 ========================= */
-let hp=100;
-let gateCount=1;
+let hallucination = new THREE.Mesh(
+  new THREE.SphereGeometry(0.9),
+  new THREE.MeshStandardMaterial({
+    color:0xffffff,
+    transparent:true,
+    opacity:0.25
+  })
+);
+
+hallucination.position.set(0,1,-20);
+scene.add(hallucination);
+
+/* =========================
+   STATE
+========================= */
+let hp = 100;
+let food = 100;
+let nearFood = null;
+let gateCount = 1;
+
+/* =========================
+   EAT BUTTON
+========================= */
+eatBtn.addEventListener("click",()=>{
+
+  if(!nearFood) return;
+
+  food = Math.min(100, food + 30);
+
+  nearFood.userData.eaten = true;
+  nearFood.visible = false;
+
+});
 
 /* =========================
    UPDATE
 ========================= */
 function update(){
 
-  let speed=0.08;
+  if(!gameStarted) return;
 
-  let fwd=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
-  let right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+  food -= 0.01;
+  food = Math.max(0, food);
 
-  player.position.addScaledVector(fwd,-joy.y*speed);
-  player.position.addScaledVector(right,joy.x*speed);
+  let hungry = food < 30;
+
+  /* MOVEMENT */
+  let speed = 0.1;
+
+  let forward = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
+  let right = new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+
+  let move = new THREE.Vector3();
+  move.addScaledVector(forward, joy.y*speed);
+  move.addScaledVector(right, joy.x*speed);
+
+  let newPos = player.position.clone().add(move);
+
+  if(!checkCollision(newPos)){
+    player.position.copy(newPos);
+  }
 
   camera.position.copy(player.position);
-  light.position.copy(camera.position);
+  light.position.copy(player.position);
 
-  if(player.position.z < -(chunks.length-2)*20){
-    createChunk(-chunks.length*20);
-  }
+  /* FOOD CHECK */
+  nearFood = null;
 
-  chunks.forEach(c=>{
+  for(let f of foodItems){
 
-    c.userData.flowers.forEach(f=>{
-      if(player.position.distanceTo(f.position)<1){
-        hp -= 0.2;
-      }
-    });
+    if(f.userData.eaten) continue;
 
-    let g=c.userData.gate;
-    if(player.position.distanceTo(g.position)<3){
-      gateCount++;
-      document.getElementById("gate").innerText=gateCount;
+    if(player.position.distanceTo(f.position) < 2){
+      nearFood = f;
     }
-
-  });
-
-  let dir=player.position.clone().sub(enemy.position).normalize();
-  enemy.position.add(dir.multiplyScalar(0.04));
-
-  document.getElementById("hp").innerText=Math.floor(hp);
-
-  if(player.position.distanceTo(enemy.position)<2){
-    document.body.style.background="red";
-    setTimeout(()=>location.reload(),1200);
   }
 
+  eatBtn.style.display = nearFood ? "flex" : "none";
+
+  /* HALLUCINATION */
+  if(hungry){
+
+    hallucination.visible = true;
+
+    let dir = player.position.clone().sub(hallucination.position).normalize();
+    hallucination.position.add(dir.multiplyScalar(0.03));
+
+    document.body.style.filter = "brightness(0.75) contrast(1.2)";
+
+  }else{
+
+    hallucination.visible = false;
+    document.body.style.filter = "none";
+  }
+
+  /* UI */
+  hpUI.innerText = Math.floor(hp);
+  foodUI.innerText = Math.floor(food);
 }
 
-/* =========================
-   LOOP
-========================= */
+/* LOOP */
 function animate(){
   requestAnimationFrame(animate);
   update();
