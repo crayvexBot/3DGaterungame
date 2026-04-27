@@ -1,155 +1,50 @@
-/* =========================
-   BASIC SETUP
-========================= */
-let scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x111111, 5, 40);
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-let camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+<title>Gate Run 3D</title>
 
-let renderer = new THREE.WebGLRenderer();
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
-
-/* LIGHT */
-let light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5,10,5);
-scene.add(light);
-
-/* PLAYER */
-let player = new THREE.Mesh(
-  new THREE.BoxGeometry(1,1,1),
-  new THREE.MeshStandardMaterial({color:0xffffff})
-);
-scene.add(player);
-
-/* FLOOR */
-let floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200,200),
-  new THREE.MeshStandardMaterial({color:0x1f4d2a})
-);
-floor.rotation.x = -Math.PI/2;
-scene.add(floor);
-
-/* =========================
-   MOBILE JOYSTICK
-========================= */
-let joy = {x:0, y:0};
-
-let stick = document.getElementById("stick");
-let joystick = document.getElementById("joystick");
-
-joystick.addEventListener("touchmove", e=>{
-  let t = e.touches[0];
-  let rect = joystick.getBoundingClientRect();
-
-  let dx = t.clientX - rect.left - 60;
-  let dy = t.clientY - rect.top - 60;
-
-  joy.x = dx/40;
-  joy.y = dy/40;
-
-  stick.style.transform = `translate(${dx}px,${dy}px)`;
-});
-
-/* =========================
-   GAME VARIABLES
-========================= */
-let hp = 100;
-let gate = 1;
-
-/* =========================
-   PROCEDURAL GATES
-========================= */
-function generateGate(){
-  player.position.x = 0;
-  player.position.z = 0;
-
-  /* random fog density */
-  scene.fog.density = Math.random()*0.05;
+<style>
+body { margin: 0; overflow: hidden; font-family: Arial; background:black; }
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  z-index: 10;
 }
+button { padding: 8px; margin-top: 5px; }
 
-/* =========================
-   MOVEMENT
-========================= */
-function update(){
-
-  player.position.x += joy.x * 0.1;
-  player.position.z += joy.y * 0.1;
-
-  camera.position.x = player.position.x;
-  camera.position.z = player.position.z + 5;
-  camera.position.y = 2;
-
-  camera.lookAt(player.position);
-
-  /* fake hazard */
-  if(Math.random()<0.001){
-    damage(5);
-  }
+/* JUMPSCARE */
+#jumpscare {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: red;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 50px;
+  color: black;
+  z-index: 999;
 }
+</style>
 
-/* =========================
-   HP
-========================= */
-function damage(a){
-  hp -= a;
-  document.getElementById("hp").innerText = hp;
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
+</head>
 
-  if(hp <= 0){
-    jumpscare();
-  }
-}
+<body>
 
-/* =========================
-   JUMPSCARE
-========================= */
-function jumpscare(){
-  let sc = document.createElement("div");
-  sc.id = "jumpscare";
-  sc.innerHTML = "YOU DIED";
+<div id="ui">
+  <h2>🚪 Gate: <span id="gate">1</span>/50</h2>
+  <h3>❤️ HP: <span id="hp">100</span></h3>
+</div>
 
-  document.body.appendChild(sc);
-  sc.style.display = "flex";
+<div id="jumpscare">YOU DIED</div>
 
-  setTimeout(()=>location.reload(), 2000);
-}
+<script src="game.js"></script>
 
-/* =========================
-   ELEVATOR SYSTEM
-========================= */
-function startElevator(){
-
-  document.getElementById("intro").style.display = "none";
-  document.getElementById("elevator").style.display = "flex";
-
-  setTimeout(()=>{
-
-    document.getElementById("elevator").style.display = "none";
-    document.getElementById("loading").style.display = "flex";
-
-    setTimeout(()=>{
-
-      document.getElementById("loading").style.display = "none";
-      sceneInit();
-
-    }, 3000);
-
-  }, 5000);
-}
-
-/* =========================
-   INIT GAME
-========================= */
-function sceneInit(){
-  generateGate();
-  animate();
-}
-
-/* =========================
-   LOOP
-========================= */
-function animate(){
-  requestAnimationFrame(animate);
-  update();
-  renderer.render(scene,camera);
-}
+</body>
+</html>
