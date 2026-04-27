@@ -1,6 +1,6 @@
-/* ======================
-   BASIC SETUP
-====================== */
+/* =========================
+   THREE.JS SETUP
+========================= */
 let scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x000000, 5, 40);
 
@@ -32,23 +32,62 @@ scene.add(player);
 
 camera.position.set(0,2,5);
 
-/* ======================
-   VARIABLES
-====================== */
+/* =========================
+   GAME STATE
+========================= */
 let hp = 100;
 let gate = 1;
 
-let keys = {};
+/* =========================
+   JOYSTICK SYSTEM
+========================= */
+let joy = {x:0, y:0};
 
-/* ======================
-   INPUT
-====================== */
-document.addEventListener("keydown", e => keys[e.key]=true);
-document.addEventListener("keyup", e => keys[e.key]=false);
+let base = document.getElementById("joyBase");
+let stick = document.getElementById("joyStick");
 
-/* ======================
-   GATES SYSTEM
-====================== */
+let dragging = false;
+
+base.addEventListener("touchstart", e=>{
+  dragging = true;
+});
+
+base.addEventListener("touchend", e=>{
+  dragging = false;
+  joy.x = 0;
+  joy.y = 0;
+
+  stick.style.left = "35px";
+  stick.style.top = "35px";
+});
+
+base.addEventListener("touchmove", e=>{
+
+  if(!dragging) return;
+
+  let t = e.touches[0];
+  let rect = base.getBoundingClientRect();
+
+  let dx = t.clientX - rect.left - 60;
+  let dy = t.clientY - rect.top - 60;
+
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  let max = 40;
+
+  if(dist > max){
+    dx = dx/dist * max;
+    dy = dy/dist * max;
+  }
+
+  joy.x = dx/max;
+  joy.y = dy/max;
+
+  stick.style.transform = `translate(${dx}px,${dy}px)`;
+});
+
+/* =========================
+   GATES
+========================= */
 let gates = [];
 
 function generateGates(){
@@ -56,7 +95,7 @@ function generateGates(){
   gates.forEach(g=>scene.remove(g));
   gates = [];
 
-  for(let i=0;i<8;i++){
+  for(let i=0;i<6;i++){
 
     let g = new THREE.Mesh(
       new THREE.BoxGeometry(5,5,1),
@@ -76,22 +115,17 @@ function generateGates(){
 
 generateGates();
 
-/* ======================
+/* =========================
    ENTITIES
-====================== */
+========================= */
 let lookAtMe = null;
-let seeingMan = null;
 
 /* LOOK AT ME */
 function spawnLookAtMe(){
 
   lookAtMe = new THREE.Mesh(
     new THREE.SphereGeometry(1),
-    new THREE.MeshStandardMaterial({
-      color:0xffffff,
-      transparent:true,
-      opacity:0.5
-    })
+    new THREE.MeshStandardMaterial({color:0xffffff, transparent:true, opacity:0.5})
   );
 
   lookAtMe.position.set(
@@ -102,61 +136,35 @@ function spawnLookAtMe(){
 
   scene.add(lookAtMe);
 
-  let timer = 10;
+  let t = 10;
 
-  let t = setInterval(()=>{
-    timer--;
-
-    if(timer <= 0){
+  let timer = setInterval(()=>{
+    t--;
+    if(t<=0){
       damage(50);
       scene.remove(lookAtMe);
       lookAtMe = null;
-      clearInterval(t);
+      clearInterval(timer);
     }
   },1000);
 }
 
-/* SEEING MAN */
-function spawnSeeingMan(){
-
-  seeingMan = new THREE.Mesh(
-    new THREE.BoxGeometry(1,2,1),
-    new THREE.MeshStandardMaterial({
-      color:0xffffff,
-      transparent:true,
-      opacity:0.3
-    })
-  );
-
-  seeingMan.position.set(
-    (Math.random()-0.5)*15,
-    1,
-    player.position.z - 8
-  );
-
-  scene.add(seeingMan);
-}
-
-/* ======================
-   DAMAGE + DEATH
-====================== */
+/* =========================
+   DAMAGE
+========================= */
 function damage(a){
   hp -= a;
   document.getElementById("hp").innerText = hp;
 
   if(hp <= 0){
-    jumpscare();
+    document.getElementById("jumpscare").style.display = "flex";
+    setTimeout(()=>location.reload(),2000);
   }
 }
 
-function jumpscare(){
-  document.getElementById("jumpscare").style.display = "flex";
-  setTimeout(()=>location.reload(),2000);
-}
-
-/* ======================
-   GATE TRIGGER
-====================== */
+/* =========================
+   GATE SYSTEM
+========================= */
 function checkGates(){
 
   gates.forEach(g=>{
@@ -169,46 +177,36 @@ function checkGates(){
       player.position.z -= 10;
 
       generateGates();
-
       triggerEvents();
     }
   });
 }
 
-/* ======================
-   EVENTS PER GATE
-====================== */
+/* =========================
+   EVENTS
+========================= */
 function triggerEvents(){
 
-  // fog randomness
-  if(Math.random() < 0.4){
+  if(Math.random()<0.4){
     scene.fog.density = 0.05;
   } else {
     scene.fog.density = 0.01;
   }
 
-  // Look At Me spawn
-  if(Math.random() < 0.5){
+  if(Math.random()<0.5){
     spawnLookAtMe();
-  }
-
-  // Seeing Man spawn
-  if(Math.random() < 0.3){
-    spawnSeeingMan();
   }
 }
 
-/* ======================
-   MOVEMENT
-====================== */
+/* =========================
+   UPDATE LOOP
+========================= */
 function update(){
 
   let speed = 0.15;
 
-  if(keys["w"]) player.position.z -= speed;
-  if(keys["s"]) player.position.z += speed;
-  if(keys["a"]) player.position.x -= speed;
-  if(keys["d"]) player.position.x += speed;
+  player.position.x += joy.x * speed;
+  player.position.z += joy.y * speed;
 
   camera.position.x = player.position.x;
   camera.position.z = player.position.z + 5;
@@ -217,20 +215,11 @@ function update(){
   camera.lookAt(player.position);
 
   checkGates();
-
-  /* Seeing Man damage */
-  if(seeingMan){
-    if(camera.position.distanceTo(seeingMan.position) < 4){
-      if(Math.random() < 0.02){
-        damage(3);
-      }
-    }
-  }
 }
 
-/* ======================
+/* =========================
    LOOP
-====================== */
+========================= */
 function animate(){
   requestAnimationFrame(animate);
   update();
